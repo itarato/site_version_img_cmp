@@ -21,7 +21,7 @@ Setup
 
 * Create your own configuration
 
-    cp default.config.json config.json
+    ```cp default.config.json config.json```
 
 * Define each pages you want to compare with a unique id
 
