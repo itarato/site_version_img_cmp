@@ -1,5 +1,8 @@
 {
+  "shots_dir": "./shots/",
   "pages": {
-    "main": "http://localhost/blog_writer/"
+    "main": "http://PATH_TO_SITE/",
+    "user": "http://PATH_TO_SITE/user",
+    "login": "http://PATH_TO_SITE/login"
   }
 }

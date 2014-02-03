@@ -14,18 +14,20 @@ var config_file string = "config.json"
 var shots_dir string = "./shots/"
 
 type Config struct {
-	Pages map[string]string
+	Shots_dir string
+	Pages     map[string]string
 }
 
 func main() {
-	runApp()
+	fmt.Println("******************************")
+	fmt.Println("* Site version image compare *")
+	fmt.Println("******************************")
+
+	config := readConfiguration()
+	runApp(config)
 }
 
-func runApp() {
-	generateNewShots()
-}
-
-func generateNewShots() {
+func readConfiguration() *Config {
 	file_content, err := os.Open(config_file)
 	handleError(err, "Error occured during config file read")
 
@@ -33,26 +35,39 @@ func generateNewShots() {
 	configuration := &Config{}
 	decoder.Decode(&configuration)
 
+	shots_dir = configuration.Shots_dir
+
+	return configuration
+}
+
+func runApp(configuration *Config) {
 	for id, url := range configuration.Pages {
-		file_name_format := "shot_" + id + "_%d.png"
-		old_id := lastGenerationID(id)
-		new_id := old_id + 1
-		screenshot_name := fmt.Sprintf(file_name_format, new_id)
+		fmt.Println(">> Process " + id + ": " + url)
+		generateShotAndDiff(id, url)
+	}
+}
 
-		cmd_capture := exec.Command("phantomjs", "capture.js", url, screenshot_name)
-		err := cmd_capture.Run()
-		handleError(err, "Capture cannot run")
+func generateShotAndDiff(id string, url string) {
+	file_name_format := "shot_" + id + "_%d.png"
+	old_id := lastGenerationID(id)
+	new_id := old_id + 1
+	screenshot_name := fmt.Sprintf(file_name_format, new_id)
 
-		// There is an old version.
-		if old_id > 0 {
-			file_name_old := fmt.Sprintf(shots_dir+file_name_format, old_id)
-			file_name_new := fmt.Sprintf(shots_dir+file_name_format, new_id)
-			file_name_diff := fmt.Sprintf(shots_dir+"diff_"+file_name_format, new_id)
+	cmd_capture := exec.Command("phantomjs", "capture.js", url, screenshot_name)
+	err := cmd_capture.Run()
+	handleError(err, "Capture cannot run")
 
-			cmd_diff := exec.Command("compare", file_name_old, file_name_new, file_name_diff)
-			err := cmd_diff.Run()
-			handleError(err, "Cannot create diff")
-		}
+	// There is an old version.
+	if old_id > 0 {
+		file_name_old := fmt.Sprintf(shots_dir+file_name_format, old_id)
+		file_name_new := fmt.Sprintf(shots_dir+file_name_format, new_id)
+		file_name_diff := fmt.Sprintf(shots_dir+"diff_"+file_name_format, new_id)
+
+		cmd_diff := exec.Command("compare", file_name_old, file_name_new, file_name_diff)
+		err := cmd_diff.Run()
+		handleError(err, "Cannot create diff")
+
+		fmt.Println(">> Created new diff: " + file_name_diff)
 	}
 }
 
