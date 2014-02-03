@@ -13,7 +13,7 @@ Requirements
 Compile
 -------
 
-    ./go build main.go
+    ```./go build main.go```
 
 
 Setup
@@ -31,6 +31,6 @@ Usage
 
 * Run the script manually (or through a build system or git hook)
 
-    ./go run main.go
+    ```./go run main.go```
 
 * Check the result in ./shots/diff_*.png
