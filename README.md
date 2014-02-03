@@ -10,6 +10,12 @@ Requirements
 * PhantomJS (http://phantomjs.org/)
 
 
+Compile
+-------
+
+    ./go build main.go
+
+
 Setup
 -----
 
