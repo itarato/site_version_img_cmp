@@ -1,6 +1,9 @@
 // Site image version compare.
 // Main file.
 
+// @todo Make width an array an iterate through.
+// @todo Provide links in case it's a CI - could be handy.
+
 package main
 
 import (
@@ -167,6 +170,7 @@ func lastGenerationID(id string) uint64 {
 	handleError(err, "Cannot scan shots dir")
 
 	var max_id uint64 = 0
+	// @todo add the current size there, not just the pattern
 	rx, _ := regexp.Compile("^shot_" + id + "_\\d+_(\\d+)\\.png$")
 
 	for _, file_info := range fi {
