@@ -32,6 +32,7 @@ var shot_width int = 960
 
 // Type for the configuration JSON file.
 type Config struct {
+	Width     int
 	Shots_dir string
 	Pages     map[string]string
 }
@@ -56,6 +57,7 @@ func readConfiguration() *Config {
 	decoder.Decode(&configuration)
 
 	shots_dir = configuration.Shots_dir
+	shot_width = configuration.Width
 
 	return configuration
 }
@@ -165,7 +167,7 @@ func lastGenerationID(id string) uint64 {
 	handleError(err, "Cannot scan shots dir")
 
 	var max_id uint64 = 0
-	rx, _ := regexp.Compile("^shot_" + id + "_(\\d+)\\.png$")
+	rx, _ := regexp.Compile("^shot_" + id + "_\\d+_(\\d+)\\.png$")
 
 	for _, file_info := range fi {
 		file_name := file_info.Name()
