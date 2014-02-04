@@ -1,6 +1,7 @@
 {
   "width": 960,
   "shots_dir": "./shots/",
+  "shots_dir_public_url": "http://localhost/",
   "pages": {
     "main": "http://PATH_TO_SITE/",
     "user": "http://PATH_TO_SITE/user",

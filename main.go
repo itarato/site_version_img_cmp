@@ -15,6 +15,7 @@ import (
 	"os/exec"
 	"regexp"
 	"strconv"
+	"strings"
 )
 
 // Path to the configuration file.
@@ -33,11 +34,16 @@ var shot_name_format string = "shot_%s_%d_%d.png"
 // Default width of the screenshot.
 var shot_width int = 960
 
+// When using any CI system it is handy to have a public link to view the diff through the report interface.
+// In practice you can symlink the shot folder to an accessible path.
+var shots_dir_public_url string
+
 // Type for the configuration JSON file.
 type Config struct {
-	Width     int
-	Shots_dir string
-	Pages     map[string]string
+	Width                int
+	Shots_dir            string
+	Shots_dir_public_url string
+	Pages                map[string]string
 }
 
 // Entry point.
@@ -61,6 +67,7 @@ func readConfiguration() *Config {
 
 	shots_dir = configuration.Shots_dir
 	shot_width = configuration.Width
+	shots_dir_public_url = configuration.Shots_dir_public_url
 
 	return configuration
 }
@@ -82,7 +89,7 @@ func generateShotAndDiff(id string, url string) {
 	new_id := old_id + 1
 	screenshot_name := fmt.Sprintf(shot_name_format, id, shot_width, new_id)
 
-	cmd_capture := exec.Command("phantomjs", "capture.js", url, screenshot_name)
+	cmd_capture := exec.Command("phantomjs", "capture.js", url, screenshot_name, strconv.Itoa(shot_width))
 	err := cmd_capture.Run()
 	handleError(err, "Capture cannot run")
 
@@ -104,11 +111,14 @@ func generateDiff(id string, old_id uint64, new_id uint64) {
 	file_name_old, file_name_new, err_fix = fixImageHight(file_name_old, file_name_new)
 	handleError(err_fix, "Cannot resize")
 
-	cmd_diff := exec.Command("compare", file_name_old, file_name_new, file_name_diff)
-	err_run := cmd_diff.Run()
-	handleError(err_run, "Cannot create diff")
+	cmd_diff := exec.Command("compare", "-metric", "PSNR", file_name_old, file_name_new, file_name_diff)
+	// On some Unix based systems the exit status from compare is 1.
+	// Even after -debug "All" -verbose the cause was unknown - and at the same time the diff was generated.
+	// Avoiding error check until it's clear why is it happening.
+	output, _ := cmd_diff.CombinedOutput()
+	fmt.Println(">> Measured difference: " + strings.Trim(string(output), "\n\r\t "))
 
-	fmt.Println(">> Created new diff: " + file_name_diff)
+	fmt.Println(">> Created new diff: " + shots_dir_public_url + fmt.Sprintf("diff_"+shot_name_format, id, shot_width, new_id))
 }
 
 // Check image sizes and synchronize them.
