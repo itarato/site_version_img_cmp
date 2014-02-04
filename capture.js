@@ -4,14 +4,15 @@
  *
  * Arguments:
  *  1 - URL,
- *  2 - filename without extension.
+ *  2 - filename without extension,
+ *  3 - width of the frame.
  */
 
 // Load system module to handle arguments.
 var system = require('system');
 // Load page module for opening the URL.
 var page = require('webpage').create();
-page.viewportSize = { width: 960, height: 800 };
+page.viewportSize = { width: system.args[3], height: 800 };
 
 // Open URL.
 page.open(system.args[1], function() {

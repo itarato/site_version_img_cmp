@@ -1,4 +1,5 @@
 {
+  "width": [960],
   "shots_dir": "./shots/",
   "pages": {
     "main": "http://PATH_TO_SITE/",
