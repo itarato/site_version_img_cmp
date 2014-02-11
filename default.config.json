@@ -1,5 +1,5 @@
 {
-  "width": 960,
+  "width": [320, 960],
   "shots_dir": "./shots/",
   "shots_dir_public_url": "http://localhost/",
   "pages": {
