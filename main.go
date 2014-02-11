@@ -74,9 +74,13 @@ func readConfiguration() *Config {
 
 // Execute actions.
 func runApp(configuration *Config) {
+	task_count := len(configuration.Pages)
+	c := make(chan bool, task_count)
 	for id, url := range configuration.Pages {
-		fmt.Println(">> Process " + id + ": " + url)
-		generateShotAndDiff(id, url)
+		go generateShotAndDiff(id, url, c)
+	}
+
+	for ; task_count > 0; (func() { <-c; task_count-- })() {
 	}
 }
 
@@ -84,7 +88,9 @@ func runApp(configuration *Config) {
 //  - creating a screenshot,
 //  - correct image size issues,
 //  - create diff.
-func generateShotAndDiff(id string, url string) {
+func generateShotAndDiff(id string, url string, c chan bool) {
+	fmt.Println(">> " + id + " | Process: " + url)
+
 	old_id := lastGenerationID(id)
 	new_id := old_id + 1
 	screenshot_name := fmt.Sprintf(shot_name_format, id, shot_width, new_id)
@@ -97,15 +103,17 @@ func generateShotAndDiff(id string, url string) {
 	if old_id > 0 {
 		generateDiff(id, old_id, new_id)
 	} else {
-		fmt.Println(">> No previous version of " + id)
+		fmt.Println(">> " + id + " | No previous version")
 	}
+
+	c <- true
 }
 
 // Generate an image diff of two images.
-func generateDiff(id string, old_id uint64, new_id uint64) {
-	file_name_old := fmt.Sprintf(shots_dir+shot_name_format, id, shot_width, old_id)
-	file_name_new := fmt.Sprintf(shots_dir+shot_name_format, id, shot_width, new_id)
-	file_name_diff := fmt.Sprintf(shots_dir+"diff_"+shot_name_format, id, shot_width, new_id)
+func generateDiff(id string, old_num uint64, new_num uint64) {
+	file_name_old := fmt.Sprintf(shots_dir+shot_name_format, id, shot_width, old_num)
+	file_name_new := fmt.Sprintf(shots_dir+shot_name_format, id, shot_width, new_num)
+	file_name_diff := fmt.Sprintf(shots_dir+"diff_"+shot_name_format, id, shot_width, new_num)
 
 	var err_fix error
 	file_name_old, file_name_new, err_fix = fixImageHight(file_name_old, file_name_new)
@@ -116,9 +124,8 @@ func generateDiff(id string, old_id uint64, new_id uint64) {
 	// Even after -debug "All" -verbose the cause was unknown - and at the same time the diff was generated.
 	// Avoiding error check until it's clear why is it happening.
 	output, _ := cmd_diff.CombinedOutput()
-	fmt.Println(">> Measured difference: " + strings.Trim(string(output), "\n\r\t "))
-
-	fmt.Println(">> Created new diff: " + shots_dir_public_url + fmt.Sprintf("diff_"+shot_name_format, id, shot_width, new_id))
+	fmt.Println(">> " + id + " | Measured difference: " + strings.Trim(string(output), "\n\r\t "))
+	fmt.Println(">> " + id + " | Created new diff: " + shots_dir_public_url + fmt.Sprintf("diff_"+shot_name_format, id, shot_width, new_num))
 }
 
 // Check image sizes and synchronize them.
