@@ -17,7 +17,7 @@ page.viewportSize = { width: system.args[3], height: 800 };
 // Open URL.
 page.open(system.args[1], function() {
   // Save screenshot.
-  page.render("./shots/" + system.args[2]);
+  page.render(system.args[2]);
   // Finish.
   phantom.exit();
 });

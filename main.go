@@ -1,9 +1,6 @@
 // Site image version compare.
 // Main file.
 
-// @todo Make width an array an iterate through.
-// @todo Provide links in case it's a CI - could be handy.
-
 package main
 
 import (
@@ -13,13 +10,15 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"path"
 	"regexp"
+	"runtime"
 	"strconv"
 	"strings"
 )
 
 // Path to the configuration file.
-var config_file string = "config.json"
+const config_file = "config.json"
 
 // File name string format of the screenshots.
 // Args:
@@ -27,6 +26,9 @@ var config_file string = "config.json"
 //  2 - width of the capruted frame,
 //  3 - incremental number to separate versions.
 var shot_name_format string = "shot_%s_%d_%d.png"
+
+// Root directory of the script.
+var root_dir string
 
 // Type for the configuration JSON file.
 type Config struct {
@@ -51,7 +53,10 @@ func main() {
 
 // Read configuration file and sets default variables.
 func readConfiguration(configuration *Config) {
-	file_content, err := os.Open(config_file)
+	_, filename, _, _ := runtime.Caller(0)
+	root_dir = path.Dir(filename)
+
+	file_content, err := os.Open(getPath(config_file))
 	handleError(err, "Error occured during config file read")
 
 	decoder := json.NewDecoder(file_content)
@@ -81,9 +86,9 @@ func generateShotAndDiff(id string, url string, width int, c chan bool) {
 
 	old_id := lastGenerationID(id)
 	new_id := old_id + 1
-	screenshot_name := fmt.Sprintf(shot_name_format, id, width, new_id)
+	screenshot_name := getPath(fmt.Sprintf(config.Shots_dir+shot_name_format, id, width, new_id))
 
-	cmd_capture := exec.Command("phantomjs", "capture.js", url, screenshot_name, strconv.Itoa(width))
+	cmd_capture := exec.Command("phantomjs", getPath("capture.js"), url, screenshot_name, strconv.Itoa(width))
 	err := cmd_capture.Run()
 	handleError(err, "Capture cannot run")
 
@@ -99,9 +104,9 @@ func generateShotAndDiff(id string, url string, width int, c chan bool) {
 
 // Generate an image diff of two images.
 func generateDiff(id string, old_num uint64, new_num uint64, width int) {
-	file_name_old := fmt.Sprintf(config.Shots_dir+shot_name_format, id, width, old_num)
-	file_name_new := fmt.Sprintf(config.Shots_dir+shot_name_format, id, width, new_num)
-	file_name_diff := fmt.Sprintf(config.Shots_dir+"diff_"+shot_name_format, id, width, new_num)
+	file_name_old := getPath(fmt.Sprintf(config.Shots_dir+shot_name_format, id, width, old_num))
+	file_name_new := getPath(fmt.Sprintf(config.Shots_dir+shot_name_format, id, width, new_num))
+	file_name_diff := getPath(fmt.Sprintf(config.Shots_dir+"diff_"+shot_name_format, id, width, new_num))
 
 	var err_fix error
 	file_name_old, file_name_new, err_fix = fixImageHight(file_name_old, file_name_new, width)
@@ -168,7 +173,7 @@ func getImageHeight(path string) (int, error) {
 // Get the last generated incremental id of the same type of screenshot.
 // Returns 0 if it doesn't exist yet.
 func lastGenerationID(id string) uint64 {
-	file, err := os.Open(config.Shots_dir)
+	file, err := os.Open(getPath(config.Shots_dir))
 	handleError(err, "Cannot open shots dir")
 
 	fi, err := file.Readdir(0)
@@ -191,6 +196,11 @@ func lastGenerationID(id string) uint64 {
 	}
 
 	return max_id
+}
+
+// Extend path to absolute.
+func getPath(file_path string) string {
+	return path.Join(root_dir, file_path)
 }
 
 // Simple error helper.
