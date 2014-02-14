@@ -15,6 +15,7 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"sync"
 )
 
 // Path to the configuration file.
@@ -58,6 +59,7 @@ func readConfiguration(configuration *Config) {
 
 	file_content, err := os.Open(getPath(config_file))
 	handleError(err, "Error occured during config file read")
+	defer file_content.Close()
 
 	decoder := json.NewDecoder(file_content)
 	decoder.Decode(&configuration)
@@ -65,23 +67,26 @@ func readConfiguration(configuration *Config) {
 
 // Execute actions.
 func runApp() {
-	task_count := len(config.Pages) * len(config.Width)
-	c := make(chan bool, task_count)
+	var wg sync.WaitGroup
+
 	for id, url := range config.Pages {
 		for _, width := range config.Width {
-			go generateShotAndDiff(id, url, width, c)
+			wg.Add(1)
+			go func(id string, url string, width int) {
+				generateShotAndDiff(id, url, width)
+				defer wg.Done()
+			}(id, url, width)
 		}
 	}
 
-	for ; task_count > 0; (func() { <-c; task_count-- })() {
-	}
+	wg.Wait()
 }
 
 // Handling one page scenario:
 //  - creating a screenshot,
 //  - correct image size issues,
 //  - create diff.
-func generateShotAndDiff(id string, url string, width int, c chan bool) {
+func generateShotAndDiff(id string, url string, width int) {
 	fmt.Println(">> " + id + " | Process: " + url)
 
 	old_id := lastGenerationID(id)
@@ -98,8 +103,6 @@ func generateShotAndDiff(id string, url string, width int, c chan bool) {
 	} else {
 		fmt.Println(">> " + id + " | No previous version")
 	}
-
-	c <- true
 }
 
 // Generate an image diff of two images.
@@ -161,6 +164,7 @@ func getImageHeight(path string) (int, error) {
 	if err_open != nil {
 		return 0, err_open
 	}
+	defer reader.Close()
 
 	image, err_decode := png.Decode(reader)
 	if err_decode != nil {
@@ -175,6 +179,7 @@ func getImageHeight(path string) (int, error) {
 func lastGenerationID(id string) uint64 {
 	file, err := os.Open(getPath(config.Shots_dir))
 	handleError(err, "Cannot open shots dir")
+	defer file.Close()
 
 	fi, err := file.Readdir(0)
 	handleError(err, "Cannot scan shots dir")
