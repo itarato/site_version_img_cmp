@@ -20,14 +20,25 @@ var screenshot_path = system.args[2];
 // Virtual browser width.
 var width = system.args[3];
 
+var plugin_args = system.args[4];
+if (plugin_args) {
+  plugin_args_array = plugin_args.split('+');
+  var plugin = require('./' + plugin_args_array.shift());
+}
+
 // Load page module for opening the URL.
 var page = require('webpage').create();
 page.viewportSize = { width: width, height: 800 };
 
-// Open URL.
-page.open(url, function() {
-  // Save screenshot.
-  page.render(screenshot_path);
-  // Finish.
-  phantom.exit();
-});
+var render = function () {
+  // Open URL.
+  page.open(url, function(status) {
+    // Save screenshot.
+    page.render(screenshot_path);
+    // Finish.
+    phantom.exit();
+  });
+}
+
+// Login.
+plugin.execute(page, plugin_args_array, render);
