@@ -6,7 +6,7 @@ A tool that creates image diffs from different versions of a website. It is usef
 Requirements
 ------------
 
-* Imagemagick (compare)
+* Imagemagick (convert)
 * PhantomJS (http://phantomjs.org/)
 
 
