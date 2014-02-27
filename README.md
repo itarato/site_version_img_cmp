@@ -19,12 +19,13 @@ Compile
 Setup
 -----
 
-* Create your own configuration `cp default.config.json config.json`
+* Create your own configuration ```cp default.config.json config.json```
 * Define each pages you want to compare with a unique id
+* To enable logging set the environment variable: ```export CAPTURE_LOG_LEVEL=0``` where 0=all, 2=only error, 3=nothing
 
 
 Usage
 -----
 
-* Run the script manually (or through a build system or git hook) `./main`
-* Check the result in ./shots/diff_*.png
+* Run the script manually (or through a build system or git hook) ```./main```
+* Check the result in ```./shots/diff_*.png```
