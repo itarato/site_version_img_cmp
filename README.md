@@ -2,6 +2,8 @@
 
 A tool that creates image diffs from different versions of a website. It is useful when you would like to see if a CSS change effected (un)intentionally anywhere on the website. The tool created a snaphot of all defined pages when running the script and then it compares agains each previous versions. A diff image is created.
 
+**Drupal specifics:** There is an extra plugin for the PhantomJS script that is able to authenticate to Drupal and make the screenshot as a logged in user.
+
 
 Requirements
 ------------
