@@ -3,8 +3,17 @@
   "shots_dir": "./shots/",
   "shots_dir_public_url": "http://localhost/",
   "pages": {
-    "main": "http://PATH_TO_SITE/",
-    "user": "http://PATH_TO_SITE/user",
-    "login": "http://PATH_TO_SITE/login"
+    "anonymous_front": {
+      "url": "http://PATH/",
+      "phantom_url_arg": ""
+    },
+    "logged_in_front": {
+      "url": "http://PATH/",
+      "phantom_url_arg": "drupal.login+http://PATH/user+admin+monkey"
+    },
+    "logged_in_search": {
+      "url": "http://PATH/solr/search",
+      "phantom_url_arg": "drupal.login+http://PATH/user+admin+monkey"
+    }
   }
 }

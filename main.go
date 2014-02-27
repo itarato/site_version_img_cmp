@@ -31,12 +31,18 @@ var shot_name_format string = "shot_%s_%d_%d.png"
 // Root directory of the script.
 var root_dir string
 
+// Type of the page definition in the JSON config obejct.
+type PageDef struct {
+	Url             string
+	Phantom_url_arg string
+}
+
 // Type for the configuration JSON file.
 type Config struct {
 	Width                []int
 	Shots_dir            string
 	Shots_dir_public_url string
-	Pages                map[string]string
+	Pages                map[string]PageDef
 }
 
 // Global configuration.
@@ -69,13 +75,13 @@ func readConfiguration(configuration *Config) {
 func runApp() {
 	var wg sync.WaitGroup
 
-	for id, url := range config.Pages {
+	for id, page_def := range config.Pages {
 		for _, width := range config.Width {
 			wg.Add(1)
-			go func(id string, url string, width int) {
-				generateShotAndDiff(id, url, width)
+			go func(id string, page_def PageDef, width int) {
+				generateShotAndDiff(id, page_def, width)
 				defer wg.Done()
-			}(id, url, width)
+			}(id, page_def, width)
 		}
 	}
 
@@ -86,14 +92,14 @@ func runApp() {
 //  - creating a screenshot,
 //  - correct image size issues,
 //  - create diff.
-func generateShotAndDiff(id string, url string, width int) {
-	fmt.Println(">> " + id + " | Process: " + url)
+func generateShotAndDiff(id string, page_def PageDef, width int) {
+	fmt.Println(">> " + id + " | Process: " + page_def.Url)
 
 	old_id := lastGenerationID(id)
 	new_id := old_id + 1
 	screenshot_name := getPath(fmt.Sprintf(config.Shots_dir+shot_name_format, id, width, new_id))
 
-	cmd_capture := exec.Command("phantomjs", getPath("capture.js"), url, screenshot_name, strconv.Itoa(width))
+	cmd_capture := exec.Command("phantomjs", getPath("capture.js"), page_def.Url, screenshot_name, strconv.Itoa(width), page_def.Phantom_url_arg)
 	err := cmd_capture.Run()
 	handleError(err, "Capture cannot run")
 
