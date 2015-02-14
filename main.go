@@ -33,16 +33,16 @@ var root_dir string
 
 // Type of the page definition in the JSON config obejct.
 type PageDef struct {
-	Url             string
-	Phantom_url_arg string
+	Url           string `json:"url"`
+	PhantomURLArg string `json:"phantom_url_arg"`
 }
 
 // Type for the configuration JSON file.
 type Config struct {
-	Width                []int
-	Shots_dir            string
-	Shots_dir_public_url string
-	Pages                map[string]PageDef
+	Width             []int              `json:"width"`
+	ShotsDir          string             `json:"shots_dir"`
+	ShotsDirPublicURL string             `json:"shots_dir_public_url"`
+	Pages             map[string]PageDef `json:"pages"`
 }
 
 // Global configuration.
@@ -97,9 +97,9 @@ func generateShotAndDiff(id string, page_def PageDef, width int) {
 
 	old_id := lastGenerationID(id)
 	new_id := old_id + 1
-	screenshot_name := getPath(fmt.Sprintf(config.Shots_dir+shot_name_format, id, width, new_id))
+	screenshot_name := getPath(fmt.Sprintf(config.ShotsDir+shot_name_format, id, width, new_id))
 
-	cmd_capture := exec.Command("phantomjs", getPath("capture.js"), page_def.Url, screenshot_name, strconv.Itoa(width), page_def.Phantom_url_arg)
+	cmd_capture := exec.Command("phantomjs", getPath("capture.js"), page_def.Url, screenshot_name, strconv.Itoa(width), page_def.PhantomURLArg)
 	err := cmd_capture.Run()
 	handleError(err, "Capture cannot run")
 
@@ -113,9 +113,9 @@ func generateShotAndDiff(id string, page_def PageDef, width int) {
 
 // Generate an image diff of two images.
 func generateDiff(id string, old_num uint64, new_num uint64, width int) {
-	file_name_old := getPath(fmt.Sprintf(config.Shots_dir+shot_name_format, id, width, old_num))
-	file_name_new := getPath(fmt.Sprintf(config.Shots_dir+shot_name_format, id, width, new_num))
-	file_name_diff := getPath(fmt.Sprintf(config.Shots_dir+"diff_"+shot_name_format, id, width, new_num))
+	file_name_old := getPath(fmt.Sprintf(config.ShotsDir+shot_name_format, id, width, old_num))
+	file_name_new := getPath(fmt.Sprintf(config.ShotsDir+shot_name_format, id, width, new_num))
+	file_name_diff := getPath(fmt.Sprintf(config.ShotsDir+"diff_"+shot_name_format, id, width, new_num))
 
 	var err_fix error
 	file_name_old, file_name_new, err_fix = fixImageHight(file_name_old, file_name_new, width)
@@ -127,7 +127,7 @@ func generateDiff(id string, old_num uint64, new_num uint64, width int) {
 	// Avoiding error check until it's clear why is it happening.
 	output, _ := cmd_diff.CombinedOutput()
 	fmt.Println(">> " + id + " | Measured difference: " + strings.Trim(string(output), "\n\r\t "))
-	fmt.Println(">> " + id + " | Created new diff: " + config.Shots_dir_public_url + fmt.Sprintf("diff_"+shot_name_format, id, width, new_num))
+	fmt.Println(">> " + id + " | Created new diff: " + config.ShotsDirPublicURL + fmt.Sprintf("diff_"+shot_name_format, id, width, new_num))
 }
 
 // Check image sizes and synchronize them.
@@ -183,7 +183,7 @@ func getImageHeight(path string) (int, error) {
 // Get the last generated incremental id of the same type of screenshot.
 // Returns 0 if it doesn't exist yet.
 func lastGenerationID(id string) uint64 {
-	file, err := os.Open(getPath(config.Shots_dir))
+	file, err := os.Open(getPath(config.ShotsDir))
 	handleError(err, "Cannot open shots dir")
 	defer file.Close()
 
