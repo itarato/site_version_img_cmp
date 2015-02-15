@@ -19,7 +19,7 @@ exports.execute = function (page, plugin_args, callback) {
   log.info(login_url, login_name, login_pass);
 
   page.open(login_url, function (status) {
-    log.info('login status', status);
+    log.info('Login page status', status);
 
     // Extract form build id.
     var form_build_id = page.evaluate(function () {
