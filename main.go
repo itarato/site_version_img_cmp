@@ -31,10 +31,16 @@ var shot_name_format string = "shot_%s_%d_%d.png"
 // Root directory of the script.
 var root_dir string
 
+// Plugin definition in conf json.
+type PluginDef struct {
+	Plugin string   `json:"plugin"`
+	Params []string `json:"params"`
+}
+
 // Type of the page definition in the JSON config obejct.
 type PageDef struct {
-	Url           string `json:"url"`
-	PhantomURLArg string `json:"phantom_url_arg"`
+	Url      string      `json:"url"`
+	PreHooks []PluginDef `json:"pre_hooks"`
 }
 
 // Type for the configuration JSON file.
@@ -99,7 +105,11 @@ func generateShotAndDiff(id string, page_def PageDef, width int) {
 	new_id := old_id + 1
 	screenshot_name := getPath(fmt.Sprintf(config.ShotsDir+shot_name_format, id, width, new_id))
 
-	cmd_capture := exec.Command("phantomjs", getPath("capture.js"), page_def.Url, screenshot_name, strconv.Itoa(width), page_def.PhantomURLArg)
+	jsonConfig, toJsonErr := json.Marshal(page_def)
+	handleError(toJsonErr, "JSON could not generated.")
+
+	log.Println("phantomjs", getPath("capture.js"), screenshot_name, strconv.Itoa(width), string(jsonConfig))
+	cmd_capture := exec.Command("phantomjs", getPath("capture.js"), screenshot_name, strconv.Itoa(width), string(jsonConfig))
 	err := cmd_capture.Run()
 	handleError(err, "Capture cannot run")
 

@@ -3,10 +3,9 @@
  * PhantomJS script to virtually open the page and save a screenshot.
  *
  * Arguments:
- *  1 - URL,
- *  2 - filename without extension,
- *  3 - width of the frame,
- *  [4] - (optional) plugin argument (PLUGIN_NAME+PLUGIN_ARGS - all separated by '+').
+ *  1 - filename without extension,
+ *  2 - width of the frame,
+ *  3 - page arguments.
  *
  * Example:
  *
@@ -17,17 +16,19 @@
  *  $ phantomjs http://localhost/drupal ~/Desktop/sample.png 960 drupal.login+http://localhost/drupal/user+admin+monkey
  */
 
+'use strict';
+
 // Load system module to handle arguments.
 var system = require('system');
 
-// URL to load.
-var url = system.args[1];
-
 // File path to save the screenshot to.
-var screenshot_path = system.args[2];
+var screenshot_path = system.args[1];
 
 // Virtual browser width.
-var width = system.args[3];
+var width = system.args[2];
+
+// Configuration for the page. URL + hooks.
+var pageConfig = JSON.parse(system.args[3]);
 
 // Load page module for opening the URL.
 var page = require('webpage').create();
@@ -36,7 +37,7 @@ page.viewportSize = { width: width, height: 800 };
 // Main wrapper callback to execute the screenshots.
 var render = function () {
   // Open URL.
-  page.open(url, function(status) {
+  page.open(pageConfig.url, function(status) {
     // Save screenshot.
     page.render(screenshot_path);
     // Finish.
