@@ -25,11 +25,17 @@ const config_file = "config.json"
 // Args:
 // 	1 - id of the screenhot, usually name of the page,
 //  2 - width of the capruted frame,
-//  3 - incremental number to separate versions.
-var shot_name_format string = "shot_%s_%d_%d.png"
+//  3 - height of the capruted frame,
+//  4 - incremental number to separate versions.
+var shot_name_format string = "shot_%s_%d_%d_%d.png"
 
 // Root directory of the script.
 var root_dir string
+
+// type Size struct {
+// 	Width  int
+// 	Height int
+// }
 
 // Plugin definition in conf json.
 type PluginDef struct {
@@ -43,9 +49,14 @@ type PageDef struct {
 	PreHooks []PluginDef `json:"pre_hooks"`
 }
 
+type Size []int
+
+func (s Size) Width() int  { return s[0] }
+func (s Size) Height() int { return s[1] }
+
 // Type for the configuration JSON file.
 type Config struct {
-	Width             []int              `json:"width"`
+	ScreenSizes       []Size             `json:"screen_sizes"`
 	ShotsDir          string             `json:"shots_dir"`
 	ShotsDirPublicURL string             `json:"shots_dir_public_url"`
 	Pages             map[string]PageDef `json:"pages"`
@@ -74,7 +85,8 @@ func readConfiguration(configuration *Config) {
 	defer file_content.Close()
 
 	decoder := json.NewDecoder(file_content)
-	decoder.Decode(&configuration)
+	decodeErr := decoder.Decode(&configuration)
+	handleError(decodeErr, "Invalid JSON format")
 }
 
 // Execute actions.
@@ -82,12 +94,12 @@ func runApp() {
 	var wg sync.WaitGroup
 
 	for id, page_def := range config.Pages {
-		for _, width := range config.Width {
+		for _, size := range config.ScreenSizes {
 			wg.Add(1)
-			go func(id string, page_def PageDef, width int) {
-				generateShotAndDiff(id, page_def, width)
+			go func(id string, page_def PageDef, size Size) {
+				generateShotAndDiff(id, page_def, size)
 				defer wg.Done()
-			}(id, page_def, width)
+			}(id, page_def, size)
 		}
 	}
 
@@ -98,37 +110,36 @@ func runApp() {
 //  - creating a screenshot,
 //  - correct image size issues,
 //  - create diff.
-func generateShotAndDiff(id string, page_def PageDef, width int) {
+func generateShotAndDiff(id string, page_def PageDef, size Size) {
 	fmt.Println(">> " + id + " | Process: " + page_def.Url)
 
 	old_id := lastGenerationID(id)
 	new_id := old_id + 1
-	screenshot_name := getPath(fmt.Sprintf(config.ShotsDir+shot_name_format, id, width, new_id))
+	screenshot_name := getPath(fmt.Sprintf(config.ShotsDir+shot_name_format, id, size.Width(), size.Height(), new_id))
 
 	jsonConfig, toJsonErr := json.Marshal(page_def)
 	handleError(toJsonErr, "JSON could not generated.")
 
-	log.Println("phantomjs", getPath("capture.js"), screenshot_name, strconv.Itoa(width), string(jsonConfig))
-	cmd_capture := exec.Command("phantomjs", getPath("capture.js"), screenshot_name, strconv.Itoa(width), string(jsonConfig))
+	cmd_capture := exec.Command("phantomjs", getPath("capture.js"), screenshot_name, strconv.Itoa(size.Width()), strconv.Itoa(size.Height()), string(jsonConfig))
 	err := cmd_capture.Run()
 	handleError(err, "Capture cannot run")
 
 	// There is an old version.
 	if old_id > 0 {
-		generateDiff(id, old_id, new_id, width)
+		generateDiff(id, old_id, new_id, size)
 	} else {
 		fmt.Println(">> " + id + " | No previous version")
 	}
 }
 
 // Generate an image diff of two images.
-func generateDiff(id string, old_num uint64, new_num uint64, width int) {
-	file_name_old := getPath(fmt.Sprintf(config.ShotsDir+shot_name_format, id, width, old_num))
-	file_name_new := getPath(fmt.Sprintf(config.ShotsDir+shot_name_format, id, width, new_num))
-	file_name_diff := getPath(fmt.Sprintf(config.ShotsDir+"diff_"+shot_name_format, id, width, new_num))
+func generateDiff(id string, old_num uint64, new_num uint64, size Size) {
+	file_name_old := getPath(fmt.Sprintf(config.ShotsDir+shot_name_format, id, size.Width(), size.Height(), old_num))
+	file_name_new := getPath(fmt.Sprintf(config.ShotsDir+shot_name_format, id, size.Width(), size.Height(), new_num))
+	file_name_diff := getPath(fmt.Sprintf(config.ShotsDir+"diff_"+shot_name_format, id, size.Width(), size.Height(), new_num))
 
 	var err_fix error
-	file_name_old, file_name_new, err_fix = fixImageHight(file_name_old, file_name_new, width)
+	file_name_old, file_name_new, err_fix = fixImageHight(file_name_old, file_name_new, size.Width())
 	handleError(err_fix, "Cannot resize")
 
 	cmd_diff := exec.Command("compare", "-metric", "PSNR", file_name_old, file_name_new, file_name_diff)
@@ -137,7 +148,7 @@ func generateDiff(id string, old_num uint64, new_num uint64, width int) {
 	// Avoiding error check until it's clear why is it happening.
 	output, _ := cmd_diff.CombinedOutput()
 	fmt.Println(">> " + id + " | Measured difference: " + strings.Trim(string(output), "\n\r\t "))
-	fmt.Println(">> " + id + " | Created new diff: " + config.ShotsDirPublicURL + fmt.Sprintf("diff_"+shot_name_format, id, width, new_num))
+	fmt.Println(">> " + id + " | Created new diff: " + config.ShotsDirPublicURL + fmt.Sprintf("diff_"+shot_name_format, id, size.Width(), size.Height(), new_num))
 }
 
 // Check image sizes and synchronize them.
@@ -202,7 +213,7 @@ func lastGenerationID(id string) uint64 {
 
 	var max_id uint64 = 0
 	// @todo add the current size there, not just the pattern
-	rx, _ := regexp.Compile("^shot_" + id + "_\\d+_(\\d+)\\.png$")
+	rx, _ := regexp.Compile("^shot_" + id + "_\\d+_\\d+_(\\d+)\\.png$")
 
 	for _, file_info := range fi {
 		file_name := file_info.Name()

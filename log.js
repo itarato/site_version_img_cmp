@@ -1,4 +1,5 @@
 /**
+
  * Logger extension.
  *
  * Uses the CAPTURE_LOG_LEVEL environmental variable to set the logging level.
@@ -27,7 +28,7 @@ var log = function (message, level) {
       'error'
     ];
 
-    console.log('>>', log_level_map[level], ':', message);
+    console.log('>>', (new Date()), log_level_map[level], ':', message);
   }
 };
 

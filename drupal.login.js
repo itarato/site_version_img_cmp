@@ -10,6 +10,8 @@ var log = require('./log');
  * Loads the required Drupal login page and log in through the login form.
  */
 exports.execute = function (page, plugin_args, callback) {
+  log.info('Drupal login attempt');
+
   var login_url = plugin_args[0];
   var login_name = plugin_args[1];
   var login_pass = plugin_args[2];
@@ -37,11 +39,11 @@ exports.execute = function (page, plugin_args, callback) {
 
     // Login.
     var data = "form_id=user_login&op=Log%20in&name=" + login_name + "&pass=" + login_pass + "&form_build_id=" + form_build_id;
-    log.info('post params', data);
+    log.info('Post params', data);
 
     page.open(login_url, 'post', data, function (status) {
-      log.info('login response status', status);
-      callback(status);
+      log.info('Login response status', status);
+      callback();
     });
   });
 };

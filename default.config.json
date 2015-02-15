@@ -1,19 +1,22 @@
 {
-  "width": [320, 960],
+  "screen_sizes": [
+    [960, 800],
+    [320, 480]
+  ],
   "shots_dir": "./shots/",
-  "shots_dir_public_url": "http://localhost/",
+  "shots_dir_public_url": "http://dev.site/files/shots",
   "pages": {
     "anonymous_front": {
-      "url": "http://PATH/",
-      "phantom_url_arg": ""
+      "url": "http://dev.site/"
     },
     "logged_in_front": {
-      "url": "http://PATH/",
-      "phantom_url_arg": "drupal.login+http://PATH/user+admin+monkey"
-    },
-    "logged_in_search": {
-      "url": "http://PATH/solr/search",
-      "phantom_url_arg": "drupal.login+http://PATH/user+admin+monkey"
+      "url": "http://dev.site/mylist",
+      "pre_hooks": [
+        {
+          "plugin": "drupal.login",
+          "params": ["http://dev.site/user/", "myname", "mypassword"]
+        }
+      ]
     }
   }
 }
