@@ -9,7 +9,7 @@
     "anonymous_front": {
       "url": "http://dev.site/"
     },
-    "logged_in_front": {
+    "mylist": {
       "url": "http://dev.site/mylist",
       "pre_hooks": [
         {
